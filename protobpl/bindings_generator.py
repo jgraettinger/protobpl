@@ -50,12 +50,15 @@ def generate_message(msg_full_name, msg_type, cpp_header, package):
         if field.type in cpp_type_map:
             args['cpp_type'] = cpp_type_map[field.type]
         else:
-            # remove package portion of composite type name
-            pkg_prefix = '.%s.' % '.'.join(package)
-            field_type = field.type_name.replace(pkg_prefix, '')
+            package_prefix = '.%s' % ''.join('%s.' % p for p in package)
+
+            # field_type is the protobuf typename, minus the leading package
+            #   prefix, and with '.' replaced by '_'
+            field_type = field.type_name.replace(package_prefix, '', 1
+                ).replace('.', '_')
 
             # Message instances are passed around by pointer
-            args['cpp_type'] = '%s *' % '_'.join(field_type.split('.'))
+            args['cpp_type'] = '%s *' % field_type
 
         key = (field.label, type_map[field.type])
 
@@ -134,7 +137,7 @@ def main():
         name = proto_file.name.split('.')[0]
 
         # package namespace components
-        package = proto_file.package.split('.')
+        package = proto_file.package.split('.') if proto_file.package else []
 
         # expected location of generated cpp header
         cpp_header = package + ['%s.pb.h' % name]
